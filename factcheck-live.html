@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FactCheck Live</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161820;
+    --surface2: #1e2130;
+    --border: #252840;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --yellow: #f39c12;
+    --blue: #3498db;
+    --text: #dde1f0;
+    --text-dim: #565a7a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--green);
+  }
+  .logo em { color: var(--text-dim); font-style: normal; font-weight: 400; }
+  .live-pill {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3);
+    border-radius: 20px; padding: 0.25rem 0.65rem;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+    color: var(--red); letter-spacing: 0.08em;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+  }
+  .live-dot.active { animation: blink 1s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+  /* ── SETUP SCREEN ── */
+  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen.active { display: flex; }
+
+  .setup-screen {
+    padding: 1.25rem;
+    gap: 1.1rem;
+    overflow-y: auto;
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  .field-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+
+  input[type="password"], input[type="text"] {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem; padding: 0.75rem 1rem; width: 100%; outline: none;
+    transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  input:focus { border-color: var(--green); }
+
+  /* ★ FACTS BOX ★ */
+  .facts-box {
+    background: var(--surface);
+    border: 2px solid var(--green);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 0 20px rgba(46,204,113,0.08);
+  }
+  .facts-box-title {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.4rem;
+  }
+  .facts-box-title h2 {
+    font-size: 1rem; font-weight: 700; color: var(--green);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .facts-pill {
+    background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.25);
+    border-radius: 12px; color: var(--green);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+    padding: 0.15rem 0.6rem;
+  }
+  .facts-hint {
+    background: rgba(46,204,113,0.04); border: 1px dashed rgba(46,204,113,0.2);
+    border-radius: 8px; padding: 0.75rem;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+    color: rgba(46,204,113,0.7); line-height: 1.8; margin-bottom: 0.75rem;
+  }
+  .facts-hint strong { color: var(--green); }
+  #factsInput {
+    background: var(--surface2); border: 1px solid rgba(46,204,113,0.2);
+    border-radius: 8px; color: var(--text); font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem; line-height: 1.8; padding: 0.85rem;
+    resize: none; width: 100%; min-height: 200px; outline: none;
+    transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  #factsInput:focus { border-color: var(--green); }
+  #factsInput::placeholder { color: var(--text-dim); }
+  .facts-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 0.5rem; flex-wrap: wrap; gap: 0.4rem;
+  }
+  .facts-meta span { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--text-dim); }
+  .facts-meta span em { color: var(--green); font-style: normal; }
+
+  .btn-example {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-dim); cursor: pointer; font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.06em; padding: 0.35rem 0.7rem;
+    text-transform: uppercase; transition: all 0.2s;
+  }
+  .btn-example:hover { border-color: var(--green); color: var(--green); }
+
+  .btn-start {
+    background: var(--green); border: none; border-radius: 12px; color: #0a0f0d;
+    cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem;
+    font-weight: 800; letter-spacing: 0.06em; padding: 1rem;
+    text-transform: uppercase; transition: all 0.2s; width: 100%;
+  }
+  .btn-start:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-start:active { transform: translateY(0); }
+
+  /* ── LIVE SCREEN ── */
+  .live-screen { padding: 0; overflow: hidden; }
+
+  .live-top {
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+
+  .btn-back {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-dim); cursor: pointer; font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem; padding: 0.35rem 0.65rem; transition: all 0.2s;
+  }
+  .btn-back:hover { border-color: var(--text); color: var(--text); }
+
+  .live-context-display {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+    color: var(--text-dim); flex: 1; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .facts-loaded-badge {
+    background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.25);
+    border-radius: 10px; color: var(--green);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+    padding: 0.15rem 0.6rem; white-space: nowrap;
+  }
+
+  /* MIC BUTTON */
+  .mic-section {
+    padding: 1rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .btn-mic {
+    width: 100%; border: none; border-radius: 12px; cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 1rem;
+    font-weight: 700; letter-spacing: 0.08em; padding: 0.85rem;
+    text-transform: uppercase; transition: all 0.25s;
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    background: var(--surface2); border: 2px solid var(--green); color: var(--green);
+  }
+  .btn-mic:hover { background: rgba(46,204,113,0.12); }
+  .btn-mic.recording {
+    background: rgba(231,76,60,0.1); border-color: var(--red); color: var(--red);
+    animation: pulse-r 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-r {
+    0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,0.3)}
+    50%{box-shadow:0 0 0 10px rgba(231,76,60,0)}
+  }
+  .mic-icon { font-size: 1.1rem; }
+
+  /* MANUAL INPUT */
+  .manual-bar {
+    display: flex; gap: 0.5rem; padding: 0.75rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .manual-bar input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem; padding: 0.65rem 0.85rem; outline: none;
+    transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  .manual-bar input:focus { border-color: var(--blue); }
+  .btn-add {
+    background: var(--blue); border: none; border-radius: 8px; color: #fff;
+    cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+    font-weight: 700; padding: 0 1rem; white-space: nowrap; transition: opacity 0.2s;
+  }
+  .btn-add:hover { opacity: 0.82; }
+  .btn-add:active { opacity: 1; }
+
+  /* FEED */
+  .feed {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.85rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .feed-empty {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; gap: 0.75rem; opacity: 0.35;
+  }
+  .feed-empty .icon { font-size: 2.5rem; }
+  .feed-empty p {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem;
+    text-align: center; line-height: 1.9; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* Statement cards */
+  .stmt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+
+  .stmt-header {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border);
+  }
+  .stmt-text {
+    font-size: 0.92rem; line-height: 1.55; padding: 0.65rem 0.85rem;
+    color: var(--text);
+  }
+  .stmt-meta {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.56rem;
+    color: var(--text-dim); padding: 0 0.85rem 0.6rem;
+  }
+
+  /* Verdict */
+  .verdict-section {
+    border-top: 1px solid var(--border);
+    padding: 0.6rem 0.85rem;
+  }
+  .verdict-checking {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--text-dim);
+  }
+  .spinner-sm {
+    width: 12px; height: 12px; border: 2px solid var(--border);
+    border-top-color: var(--blue); border-radius: 50%;
+    animation: spin 0.7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .verdict-result {
+    display: flex; flex-direction: column; gap: 0.4rem;
+  }
+  .verdict-badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    border-radius: 6px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+    padding: 0.25rem 0.65rem; width: fit-content; text-transform: uppercase;
+  }
+  .verdict-ok { background: rgba(46,204,113,0.12); color: var(--green); border: 1px solid rgba(46,204,113,0.3); }
+  .verdict-flag { background: rgba(231,76,60,0.12); color: var(--red); border: 1px solid rgba(231,76,60,0.3); }
+  .verdict-warn { background: rgba(243,156,18,0.12); color: var(--yellow); border: 1px solid rgba(243,156,18,0.3); }
+  .verdict-unknown { background: rgba(86,90,122,0.2); color: var(--text-dim); border: 1px solid var(--border); }
+
+  .verdict-detail {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem;
+    color: var(--text); line-height: 1.65;
+  }
+  .verdict-fact-ref {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+    color: var(--text-dim); margin-top: 0.15rem;
+  }
+
+  /* Status */
+  .status-bar {
+    border-top: 1px solid var(--border); padding: 0.4rem 1.1rem;
+    display: flex; align-items: center; gap: 0.6rem;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem; color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .s-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dim); }
+  .s-dot.ok { background: var(--green); }
+  .s-dot.warn { background: var(--red); animation: blink 1s step-end infinite; }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Fact<em>Check</em> Live</div>
+  <div class="live-pill">
+    <div class="live-dot" id="liveDot"></div>
+    <span id="liveLabel">STANDBY</span>
+  </div>
+</div>
+
+<!-- ══ SETUP SCREEN ══ -->
+<div class="screen active setup-screen" id="screenSetup">
+
+  <div class="field-group">
+    <div class="field-label">Anthropic API Key</div>
+    <input type="password" id="apiKey" placeholder="sk-ant-..." />
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--text-dim);line-height:1.7">
+      Key stays on your device. Get one free at console.anthropic.com
+    </div>
+  </div>
+
+  <div class="field-group">
+    <div class="field-label">Context (optional)</div>
+    <input type="text" id="contextInput" placeholder="e.g. UK political interview, health policy" />
+  </div>
+
+  <!-- ★ FACTS DATABASE ★ -->
+  <div class="facts-box">
+    <div class="facts-box-title">
+      <h2>📋 Facts Database</h2>
+      <div class="facts-pill" id="factsPill">0 facts</div>
+    </div>
+
+    <div class="facts-hint">
+      <strong>➤ ENTER YOUR FACTS HERE — one per line</strong><br>
+      Each line = one checkable fact.<br>
+      Be specific: include names, numbers, dates.<br>
+      Up to 200 facts, checked instantly against every statement.
+    </div>
+
+    <textarea id="factsInput" placeholder="Type or paste your facts, one per line:
+
+The NHS budget for 2024–25 was £165 billion
+UK unemployment in January 2025 was 4.4%
+Net migration to the UK in 2023 was 685,000
+The national living wage is £11.44/hr from April 2024
+HS2 Phase 2 to Manchester was cancelled in October 2023
+..."></textarea>
+
+    <div class="facts-meta">
+      <span>Loaded: <em id="factsNum">0</em> / 200</span>
+      <button class="btn-example" onclick="loadDemo()">Load demo facts</button>
+    </div>
+  </div>
+
+  <button class="btn-start" onclick="startLive()">Start Live Fact-Check →</button>
+
+</div>
+
+<!-- ══ LIVE SCREEN ══ -->
+<div class="screen live-screen" id="screenLive">
+
+  <div class="live-top">
+    <button class="btn-back" onclick="goBack()">← Setup</button>
+    <div class="live-context-display" id="contextDisplay">—</div>
+    <div class="facts-loaded-badge" id="factsLoadedBadge">0 facts</div>
+  </div>
+
+  <div class="mic-section">
+    <button class="btn-mic" id="micBtn" onclick="toggleMic()">
+      <span class="mic-icon">🎙</span>
+      <span id="micLabel">Tap to Record</span>
+    </button>
+  </div>
+
+  <div class="manual-bar">
+    <input type="text" id="manualInput" placeholder="Or type a statement to check…" onkeydown="if(event.key==='Enter')submitManual()" />
+    <button class="btn-add" onclick="submitManual()">Check</button>
+  </div>
+
+  <div class="feed" id="feed">
+    <div class="feed-empty" id="feedEmpty">
+      <div class="icon">🔍</div>
+      <p>Record audio or type a statement<br>to begin real-time fact-checking</p>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="s-dot ok" id="sDot"></div>
+    <span id="sText">Ready — <span id="factsReadyCount">0</span> facts loaded</span>
+  </div>
+
+</div>
+
+<script>
+let facts = [];
+let mediaRecorder = null, audioChunks = [], isRecording = false;
+let checkQueue = Promise.resolve();
+
+function getFacts() {
+  return document.getElementById('factsInput').value
+    .split('\n').map(l => l.trim()).filter(l => l.length > 0).slice(0, 200);
+}
+
+function updateCount() {
+  const n = getFacts().length;
+  document.getElementById('factsNum').textContent = n;
+  document.getElementById('factsPill').textContent = n + ' fact' + (n !== 1 ? 's' : '');
+}
+document.getElementById('factsInput').addEventListener('input', updateCount);
+
+function loadDemo() {
+  document.getElementById('factsInput').value =
+`The NHS budget for 2024–25 was £165 billion
+UK unemployment rate in January 2025 was 4.4%
+The Conservatives introduced the Rwanda asylum policy in April 2022
+The UK left the European Union on 31 January 2020
+Net migration to the UK in 2023 was 685,000
+The national living wage increased to £11.44 per hour in April 2024
+The UK National Debt is approximately £2.7 trillion as of 2024
+HS2 Phase 2 to Manchester was cancelled in October 2023
+There are approximately 7.6 million people on NHS waiting lists
+The Rwanda scheme cost over £700 million before cancellation
+UK inflation peaked at 11.1% in October 2022
+The COVID furlough scheme cost approximately £70 billion
+UK GDP grew by 0.1% in 2023
+The UK defence budget is 2.3% of GDP as of 2024`;
+  updateCount();
+}
+
+function startLive() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { alert('Please enter your Anthropic API key first.'); return; }
+  facts = getFacts();
+  if (facts.length === 0) { alert('Please add at least one fact to check against.'); return; }
+  const ctx = document.getElementById('contextInput').value.trim();
+  document.getElementById('contextDisplay').textContent = ctx || 'No context set';
+  document.getElementById('factsLoadedBadge').textContent = facts.length + ' fact' + (facts.length !== 1 ? 's' : '');
+  document.getElementById('factsReadyCount').textContent = facts.length;
+  document.getElementById('screenSetup').classList.remove('active');
+  document.getElementById('screenLive').classList.add('active');
+}
+
+function goBack() {
+  if (isRecording) stopMic();
+  document.getElementById('screenLive').classList.remove('active');
+  document.getElementById('screenSetup').classList.add('active');
+}
+
+// ─── Mic ─────────────────────────────────────────────────────
+async function toggleMic() {
+  if (!isRecording) await startMic(); else stopMic();
+}
+
+async function startMic() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = handleMicStop;
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micLabel').textContent = 'Tap to Stop';
+    document.getElementById('liveDot').classList.add('active');
+    document.getElementById('liveLabel').textContent = 'RECORDING';
+    setStatus('warn', 'Recording…');
+  } catch (e) { alert('Microphone access denied. Use manual entry instead.'); }
+}
+
+function stopMic() {
+  if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop()); }
+  isRecording = false;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micLabel').textContent = 'Tap to Record';
+  document.getElementById('liveDot').classList.remove('active');
+  document.getElementById('liveLabel').textContent = 'PROCESSING';
+  setStatus('ok', 'Transcribing…');
+}
+
+async function handleMicStop() {
+  const blob = new Blob(audioChunks, { type: 'audio/webm' });
+  const apiKey = document.getElementById('apiKey').value.trim();
+  try {
+    const ab = await blob.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-20250514', max_tokens: 1000,
+        messages: [{ role: 'user', content: [
+          { type: 'document', source: { type: 'base64', media_type: 'audio/webm', data: base64 } },
+          { type: 'text', text: 'Transcribe this audio. Return ONLY the plain text transcript, nothing else.' }
+        ]}]
+      })
+    });
+    const data = await res.json();
+    if (data.error || !data.content) { useManualFallback(); return; }
+    const transcript = data.content[0].text.trim();
+    if (transcript) addAndCheck(transcript);
+    document.getElementById('liveLabel').textContent = 'STANDBY';
+    setStatus('ok', 'Ready');
+  } catch (e) { useManualFallback(); }
+}
+
+function useManualFallback() {
+  document.getElementById('liveLabel').textContent = 'STANDBY';
+  setStatus('ok', 'Use manual entry — audio transcription unavailable');
+}
+
+// ─── Manual ───────────────────────────────────────────────────
+function submitManual() {
+  const input = document.getElementById('manualInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addAndCheck(text);
+}
+
+// ─── Add card + check ─────────────────────────────────────────
+function addAndCheck(text) {
+  document.getElementById('feedEmpty').style.display = 'none';
+
+  const id = 'card-' + Date.now();
+  const ctx = document.getElementById('contextInput').value.trim();
+
+  const card = document.createElement('div');
+  card.className = 'stmt-card';
+  card.id = id;
+  card.innerHTML = `
+    <div class="stmt-header">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim)">${new Date().toLocaleTimeString()}</span>
+    </div>
+    <div class="stmt-text">${escapeHtml(text)}</div>
+    <div class="verdict-section">
+      <div class="verdict-checking">
+        <div class="spinner-sm"></div>
+        Checking against ${facts.length} facts…
+      </div>
+    </div>`;
+
+  document.getElementById('feed').appendChild(card);
+  card.scrollIntoView({ behavior: 'smooth' });
+
+  // Queue checks so they don't race
+  checkQueue = checkQueue.then(() => checkStatement(id, text, ctx));
+}
+
+async function checkStatement(cardId, statement, context) {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const factList = facts.map((f, i) => `[F${i + 1}] ${f}`).join('\n');
+
+  const prompt = `You are an instant fact-checker. A person just said:
+
+"${statement}"
+
+${context ? 'Context: ' + context + '\n' : ''}
+Check this statement against the following verified facts:
+${factList}
+
+Respond ONLY with JSON (no other text):
+{
+  "verdict": "true" | "false" | "misleading" | "unverifiable",
+  "confidence": "high" | "medium" | "low",
+  "explanation": "One or two sentence plain English explanation",
+  "fact_refs": ["F1", "F3"]
+}
+
+- "true": statement is consistent with the facts
+- "false": statement directly contradicts one or more facts
+- "misleading": statement is technically possible but omits key context from the facts
+- "unverifiable": cannot be checked against the provided facts`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-20250514', max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    let result;
+    try { result = JSON.parse(data.content[0].text.replace(/```json|```/g, '').trim()); }
+    catch (e) { result = { verdict: 'unverifiable', confidence: 'low', explanation: 'Could not parse response.', fact_refs: [] }; }
+
+    updateCard(cardId, result);
+    setStatus('ok', 'Ready — last checked at ' + new Date().toLocaleTimeString());
+  } catch (e) {
+    updateCard(cardId, { verdict: 'unverifiable', confidence: 'low', explanation: 'Check failed: ' + e.message, fact_refs: [] });
+    setStatus('ok', 'Ready');
+  }
+}
+
+function updateCard(cardId, result) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const vs = card.querySelector('.verdict-section');
+
+  const verdictClass = {
+    true: 'verdict-ok',
+    false: 'verdict-flag',
+    misleading: 'verdict-warn',
+    unverifiable: 'verdict-unknown'
+  }[result.verdict] || 'verdict-unknown';
+
+  const verdictIcon = { true: '✓', false: '✗', misleading: '⚠', unverifiable: '?' }[result.verdict] || '?';
+  const verdictLabel = result.verdict.toUpperCase();
+  const confLabel = result.confidence ? ` · ${result.confidence} confidence` : '';
+  const factNote = result.fact_refs && result.fact_refs.length
+    ? `<div class="verdict-fact-ref">Refs: ${result.fact_refs.join(', ')}</div>` : '';
+
+  vs.innerHTML = `
+    <div class="verdict-result">
+      <div class="verdict-badge ${verdictClass}">${verdictIcon} ${verdictLabel}${confLabel}</div>
+      <div class="verdict-detail">${escapeHtml(result.explanation)}</div>
+      ${factNote}
+    </div>`;
+}
+
+function setStatus(type, text) {
+  document.getElementById('sDot').className = 's-dot ' + type;
+  document.getElementById('sText').textContent = text;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+updateCount();
+</script>
+</body>
+</html>
